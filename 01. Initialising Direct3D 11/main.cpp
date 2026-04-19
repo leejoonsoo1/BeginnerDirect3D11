@@ -70,8 +70,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
     }
     
     // Create D3D11 Device and Context
-    ID3D11Device1* d3d11Device;
-    ID3D11DeviceContext1* d3d11DeviceContext;
+    ID3D11Device1*          d3d11Device;
+    ID3D11DeviceContext1*   d3d11DeviceContext;
     {
         ID3D11Device* baseDevice;
         ID3D11DeviceContext* baseDeviceContext;
