@@ -34,6 +34,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
     // Open a window
     HWND hwnd;
     {
+        // WNDCLASSEXW initialize
         WNDCLASSEXW winClass = {};
         winClass.cbSize = sizeof(WNDCLASSEXW);
         winClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -44,16 +45,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         winClass.lpszClassName = L"MyWindowClass";
         winClass.hIconSm = LoadIconW(0, IDI_APPLICATION);
 
+        // check winclass nullptr
         if(!RegisterClassExW(&winClass)) {
             MessageBoxA(0, "RegisterClassEx failed", "Fatal Error", MB_OK);
             return GetLastError();
         }
 
+        // initialize screen 
         RECT initialRect = { 0, 0, 1024, 768 };
         AdjustWindowRectEx(&initialRect, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_OVERLAPPEDWINDOW);
         LONG initialWidth = initialRect.right - initialRect.left;
         LONG initialHeight = initialRect.bottom - initialRect.top;
 
+        // create window handler
         hwnd = CreateWindowExW(WS_EX_OVERLAPPEDWINDOW,
                                 winClass.lpszClassName,
                                 L"01. Initialising Direct3D 11",
@@ -63,6 +67,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
                                 initialHeight,
                                 0, 0, hInstance, 0);
 
+        // check handler
         if(!hwnd) {
             MessageBoxA(0, "CreateWindowEx failed", "Fatal Error", MB_OK);
             return GetLastError();
@@ -81,11 +86,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
         #endif
 
+        // Create Device, baseDevice, baseDeviceContext allocation.
         HRESULT hResult = D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 
                                             0, creationFlags, 
                                             featureLevels, ARRAYSIZE(featureLevels), 
                                             D3D11_SDK_VERSION, &baseDevice, 
                                             0, &baseDeviceContext);
+        // Check Device nullptr
         if(FAILED(hResult)){
             MessageBoxA(0, "D3D11CreateDevice() failed", "Fatal Error", MB_OK);
             return GetLastError();
@@ -144,6 +151,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
             dxgiAdapter->Release();
         }
 
+        // SwapChain initialize
         DXGI_SWAP_CHAIN_DESC1 d3d11SwapChainDesc = {};
         d3d11SwapChainDesc.Width = 0; // use window width
         d3d11SwapChainDesc.Height = 0; // use window height
@@ -157,6 +165,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         d3d11SwapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         d3d11SwapChainDesc.Flags = 0;
 
+        // sawpchain handler create
         HRESULT hResult = dxgiFactory->CreateSwapChainForHwnd(d3d11Device, hwnd, &d3d11SwapChainDesc, 0, 0, &d3d11SwapChain);
         assert(SUCCEEDED(hResult));
 
