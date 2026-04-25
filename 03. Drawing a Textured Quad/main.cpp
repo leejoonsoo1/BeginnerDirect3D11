@@ -14,6 +14,8 @@
 
 static bool global_windowDidResize = false;
 
+// 샘플링이 좌표에 매치되는 텍스쳐를 가져와주는 것
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     LRESULT result = 0;
