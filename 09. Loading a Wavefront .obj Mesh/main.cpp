@@ -40,10 +40,12 @@ bool win32CreateD3D11RenderTargets(ID3D11Device1* d3d11Device, IDXGISwapChain1* 
     HRESULT hResult = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&d3d11FrameBuffer);
     assert(SUCCEEDED(hResult));
 
+    // d3d11Device 정보를 통해 랜더타겟뷰를 생성 d3d11FrameBufferView
     hResult = d3d11Device->CreateRenderTargetView(d3d11FrameBuffer, 0, d3d11FrameBufferView);
     assert(SUCCEEDED(hResult));
 
     D3D11_TEXTURE2D_DESC depthBufferDesc;
+    // d3d11FrameBuffer에서 D3D11_TEXTURE2D_DESC 정보를 depthBufferDesc에 저장
     d3d11FrameBuffer->GetDesc(&depthBufferDesc);
 
     d3d11FrameBuffer->Release();
@@ -52,8 +54,10 @@ bool win32CreateD3D11RenderTargets(ID3D11Device1* d3d11Device, IDXGISwapChain1* 
     depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
     ID3D11Texture2D* depthBuffer;
+    // 텍스쳐 2D 생성
     d3d11Device->CreateTexture2D(&depthBufferDesc, nullptr, &depthBuffer);
 
+    // 댑스 스텐실 뷰 생성.
     d3d11Device->CreateDepthStencilView(depthBuffer, nullptr, depthBufferView);
 
     depthBuffer->Release();
@@ -115,6 +119,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
     // Open a window
     HWND hwnd;
     {
+        // windows class initialize.
         WNDCLASSEXW winClass = {};
         winClass.cbSize = sizeof(WNDCLASSEXW);
         winClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -125,16 +130,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         winClass.lpszClassName = L"MyWindowClass";
         winClass.hIconSm = LoadIconW(0, IDI_APPLICATION);
 
+        // winClass 체크
         if(!RegisterClassExW(&winClass)) {
             MessageBoxA(0, "RegisterClassEx failed", "Fatal Error", MB_OK);
             return GetLastError();
         }
 
+        // 화면크기 수정
         RECT initialRect = { 0, 0, 1024, 768 };
         AdjustWindowRectEx(&initialRect, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_OVERLAPPEDWINDOW);
         LONG initialWidth = initialRect.right - initialRect.left;
         LONG initialHeight = initialRect.bottom - initialRect.top;
 
+        // 화면 생성
         hwnd = CreateWindowExW(WS_EX_OVERLAPPEDWINDOW,
                                 winClass.lpszClassName,
                                 L"09. Loading a Wavefront .obj Mesh",
@@ -144,6 +152,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
                                 initialHeight,
                                 0, 0, hInstance, 0);
 
+        // 핸들 체크
         if(!hwnd) {
             MessageBoxA(0, "CreateWindowEx failed", "Fatal Error", MB_OK);
             return GetLastError();
@@ -162,11 +171,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
         #endif
 
+        // 디바이스 생성
         HRESULT hResult = D3D11CreateDevice(0, D3D_DRIVER_TYPE_HARDWARE, 
                                             0, creationFlags, 
                                             featureLevels, ARRAYSIZE(featureLevels), 
                                             D3D11_SDK_VERSION, &baseDevice, 
                                             0, &baseDeviceContext);
+        
+        // 생성 결과값 확인
         if(FAILED(hResult)){
             MessageBoxA(0, "D3D11CreateDevice() failed", "Fatal Error", MB_OK);
             return GetLastError();
@@ -205,26 +217,31 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         // Get DXGI Factory (needed to create Swap Chain)
         IDXGIFactory2* dxgiFactory;
         {
+            // dxgiDevice에 IDXGIDevice1의 정보를 매핑?
             IDXGIDevice1* dxgiDevice;
             HRESULT hResult = d3d11Device->QueryInterface(__uuidof(IDXGIDevice1), (void**)&dxgiDevice);
             assert(SUCCEEDED(hResult));
 
+            // 어댑터를 얻어 온다.
             IDXGIAdapter* dxgiAdapter;
             hResult = dxgiDevice->GetAdapter(&dxgiAdapter);
             assert(SUCCEEDED(hResult));
             dxgiDevice->Release();
 
+            // Desc를 얻어온다.
             DXGI_ADAPTER_DESC adapterDesc;
             dxgiAdapter->GetDesc(&adapterDesc);
 
             OutputDebugStringA("Graphics Device: ");
             OutputDebugStringW(adapterDesc.Description);
 
+            // dxgiAdapter의 부모의 정보를 얻어와 dxgiFactory에 저장
             hResult = dxgiAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&dxgiFactory);
             assert(SUCCEEDED(hResult));
             dxgiAdapter->Release();
         }
         
+        // 스왑체인 초기화
         DXGI_SWAP_CHAIN_DESC1 d3d11SwapChainDesc = {};
         d3d11SwapChainDesc.Width = 0; // use window width
         d3d11SwapChainDesc.Height = 0; // use window height
@@ -238,6 +255,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         d3d11SwapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
         d3d11SwapChainDesc.Flags = 0;
 
+        // 스왑체인 생성 d3d11SwapChain
         HRESULT hResult = dxgiFactory->CreateSwapChainForHwnd(d3d11Device, hwnd, &d3d11SwapChainDesc, 0, 0, &d3d11SwapChain);
         assert(SUCCEEDED(hResult));
 
@@ -274,6 +292,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
             return 1;
         }
 
+        // 버택스 쉐이더 뷰 생성
         hResult = d3d11Device->CreateVertexShader(vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), nullptr, &vertexShader);
         assert(SUCCEEDED(hResult));
     }
@@ -297,6 +316,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
             return 1;
         }
 
+        // 픽셀 쉐이더 생성
         hResult = d3d11Device->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &pixelShader);
         assert(SUCCEEDED(hResult));
         psBlob->Release();
@@ -311,6 +331,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
             { "TEX", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 }
         };
 
+        // 인풋 레이아웃 생성
         HRESULT hResult = d3d11Device->CreateInputLayout(inputElementDesc, ARRAYSIZE(inputElementDesc), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &inputLayout);
         assert(SUCCEEDED(hResult));
         vsBlob->Release();
@@ -337,6 +358,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
 
         D3D11_SUBRESOURCE_DATA vertexSubresourceData = { obj.vertexBuffer };
 
+        // 버텍스 버퍼 생성
         HRESULT hResult = d3d11Device->CreateBuffer(&vertexBufferDesc, &vertexSubresourceData, &vertexBuffer);
         assert(SUCCEEDED(hResult));
 
@@ -347,6 +369,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
 
         D3D11_SUBRESOURCE_DATA indexSubresourceData = { obj.indexBuffer };
 
+        // 인덱스 버퍼 생성
         hResult = d3d11Device->CreateBuffer(&indexBufferDesc, &indexSubresourceData, &indexBuffer);
         assert(SUCCEEDED(hResult));
         freeLoadedObj(obj);
@@ -366,6 +389,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         samplerDesc.BorderColor[3] = 1.0f;
         samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 
+        // 샘플러 스테이트 생성
         d3d11Device->CreateSamplerState(&samplerDesc, &samplerState);
     }
     
@@ -395,8 +419,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         textureSubresourceData.SysMemPitch = texBytesPerRow;
 
         ID3D11Texture2D* texture;
+        // 텍스처 2D 생성.
         d3d11Device->CreateTexture2D(&textureDesc, &textureSubresourceData, &texture);
 
+        // 쉐이더 리소스 뷰 생성
         d3d11Device->CreateShaderResourceView(texture, nullptr, &textureView);
         texture->Release();
     }
@@ -418,6 +444,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         constantBufferDesc.BindFlags      = D3D11_BIND_CONSTANT_BUFFER;
         constantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
+        // constantbuffer 생성
         HRESULT hResult = d3d11Device->CreateBuffer(&constantBufferDesc, nullptr, &constantBuffer);
         assert(SUCCEEDED(hResult));
     }
@@ -429,6 +456,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         rasterizerDesc.CullMode = D3D11_CULL_BACK;
         rasterizerDesc.FrontCounterClockwise = TRUE;
 
+        // 레스터라이저스테이트 생성
         d3d11Device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
     }
 
@@ -439,6 +467,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
         depthStencilDesc.DepthFunc      = D3D11_COMPARISON_LESS;
 
+        // 뎁스스텐실스테이트 생성
         d3d11Device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState);
     }
 
@@ -456,9 +485,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
     LONGLONG perfCounterFrequency = 0;
     {
         LARGE_INTEGER perfCount;
+        // 시간
         QueryPerformanceCounter(&perfCount);
         startPerfCount = perfCount.QuadPart;
         LARGE_INTEGER perfFreq;
+        // 타이머 속도
         QueryPerformanceFrequency(&perfFreq);
         perfCounterFrequency = perfFreq.QuadPart;
     }
@@ -584,14 +615,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         d3d11DeviceContext->Unmap(constantBuffer, 0);
 
         FLOAT backgroundColor[4] = { 0.1f, 0.2f, 0.6f, 1.0f };
+        // 렌더 타겟 뷰 클리어
         d3d11DeviceContext->ClearRenderTargetView(d3d11FrameBufferView, backgroundColor);
         
+        // 뎁스스텐실뷰 클리어
         d3d11DeviceContext->ClearDepthStencilView(depthBufferView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
         D3D11_VIEWPORT viewport = { 0.0f, 0.0f, (FLOAT)windowWidth, (FLOAT)windowHeight, 0.0f, 1.0f };
         d3d11DeviceContext->RSSetViewports(1, &viewport);
 
+        // rasterizerState 설정
         d3d11DeviceContext->RSSetState(rasterizerState);
+        // depthStencilState 설정
         d3d11DeviceContext->OMSetDepthStencilState(depthStencilState, 0);
 
         d3d11DeviceContext->OMSetRenderTargets(1, &d3d11FrameBufferView, depthBufferView);
@@ -602,14 +637,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
         d3d11DeviceContext->VSSetShader(vertexShader, nullptr, 0);
         d3d11DeviceContext->PSSetShader(pixelShader, nullptr, 0);
 
+        // constantBuffer 설정
         d3d11DeviceContext->VSSetConstantBuffers(0, 1, &constantBuffer);
 
+        // textureView 설정
         d3d11DeviceContext->PSSetShaderResources(0, 1, &textureView);
+        // samplerState 설정
         d3d11DeviceContext->PSSetSamplers(0, 1, &samplerState);
 
+        // 버텍스 버퍼, 인덱스 버퍼 값 가져오기
         d3d11DeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
         d3d11DeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R16_UINT, 0);
-
+        
+        // 인덱스 그리기
         d3d11DeviceContext->DrawIndexed(numIndices, 0, 0);
     
         d3d11SwapChain->Present(1, 0);
